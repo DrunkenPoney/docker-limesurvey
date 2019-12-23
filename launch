@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+docker-compose kill &>/dev/null
+
+set -e
+
+docker build -t drunkenponey/base-container:latest base-container/
+# docker-compose build
+
+# powershell 'Get-NetAdapterRsc | Disable-NetAdapterRsc'
+# sleep 3
+
+# yes | docker network prune
+exec docker-compose up --build --force-recreate

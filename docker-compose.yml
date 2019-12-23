@@ -1,0 +1,87 @@
+version: "3.7"
+services:
+
+  ##### BASE DE DONNÉES (MySQL) #####
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    restart: always
+    ulimits:
+      nofile: 90000
+    ports:
+      - 3306:3306
+      - 33060:33060
+    volumes:
+      - "./volumes/mysql/my.cnf:/etc/mysql/mysql.conf.d/engine.cnf"
+      - "./volumes/mysql/entrypoint:/docker-entrypoint-initdb.d"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: uni_sondage
+
+      MYSQL_USER: limesurvey
+      MYSQL_PASSWORD: limesurvey
+
+      MYSQL_ADMIN_USER: admin
+      MYSQL_ADMIN_PASSWORD: admin
+
+      # Informations de connexion de la BD à importer
+      IMPORT_ENABLED: 0 # 1 = Activé
+
+  ##### SERVEUR APACHE (LimeSurvey) #####
+  limesurvey:
+    build:
+      context: ./ls-docker
+      dockerfile: Dockerfile
+    image: limesurvey:latest
+    container_name: limesurvey
+    restart: always
+    ports:
+      - '81:80'
+      - '444:443'
+      - '20-22:20-22'
+      - '12020-12025:12020-12025'
+    environment:
+      PHP_DATE_TIMEZONE: America/Toronto
+
+      PHP_DEBUGGER: xdebug
+      XDEBUG_REMOTE_AUTOSTART: 1
+      XDEBUG_REMOTE_CONNECT_BACK: 1
+      XDEBUG_REMOTE_HOST: localhost
+      XDEBUG_REMOTE_PORT: 9000
+      XDEBUG_PROFILER_ENABLE: 1
+      php.xdebug.idekey: PHPSTORM
+      php.xdebug.remote_mode: jit
+      php.short_open_tag: 'On'
+
+      VSFTP_PASV_ADDRESS: localhost
+
+      LIMESURVEY_FORCE_FETCH: 0
+      LIMESURVEY_DB_HOST: mysql
+      LIMESURVEY_DB_PORT: 3306
+      LIMESURVEY_DB_NAME: uni_sondage
+      LIMESURVEY_DB_USER: limesurvey
+      LIMESURVEY_DB_PASSWORD: limesurvey
+      LIMESURVEY_TABLE_PREFIX: sondage_
+      LIMESURVEY_DEBUG: 2
+      LIMESURVEY_SQL_DEBUG: 2
+
+      LIMESURVEY_ADMIN_USER: admin
+      LIMESURVEY_ADMIN_PASSWORD: admin
+      LIMESURVEY_ADMIN_NAME: Administrateur
+      LIMESURVEY_ADMIN_EMAIL: admin@example.com
+
+      limesurvey.config.force_xmlsettings_for_survey_rendering: 'true'
+      limesurvey.config.use_custom_twig_extensions: 'true'
+
+      # Voir https://github.com/LimeSurvey/LimeSurvey/releases
+      # LIMESURVEY_GIT_RELEASE: 2.05_plus_141123 # VERSION ACTUELLE
+      # LIMESURVEY_GIT_RELEASE: 2.73.1+171220
+      # LIMESURVEY_GIT_RELEASE: 3.21.2+191216
+      LIMESURVEY_GIT_RELEASE: 4.0.0-RC11+191209 # VERSION CIBLE
+
+      GLOBAL.force_color_prompt: 1
+    links:
+      - mysql:mysql
+    depends_on:
+      - mysql
